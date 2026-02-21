@@ -1,230 +1,120 @@
-// DESAFIO: Sistema de Pedidos de Cafeteria
-// PROBLEMA: Uma cafeteria oferece bebidas base (Café, Cappuccino, Chá) e múltiplos complementos
-// (Leite, Chocolate, Chantilly, Caramelo). O código atual cria uma classe para cada combinação
-// possível, resultando em explosão de classes e código duplicado
-
 using System;
 
 namespace DesignPatternChallenge
 {
-    // Contexto: Sistema de pedidos que precisa calcular preços e descrições
-    // com múltiplas combinações de bebidas e complementos
-    
-    // Bebidas base
-    public class Espresso
+    // ============================
+    // 1) COMPONENT
+    // ============================
+    public interface IBeverage
     {
-        public virtual decimal GetCost()
-        {
-            return 3.50m;
-        }
-
-        public virtual string GetDescription()
-        {
-            return "Espresso";
-        }
+        decimal GetCost();
+        string GetDescription();
     }
 
-    public class Cappuccino
+    // ============================
+    // 2) CONCRETE COMPONENTS (Bebidas base)
+    // ============================
+    public class Espresso : IBeverage
     {
-        public virtual decimal GetCost()
-        {
-            return 4.50m;
-        }
-
-        public virtual string GetDescription()
-        {
-            return "Cappuccino";
-        }
+        public decimal GetCost() => 3.50m;
+        public string GetDescription() => "Espresso";
     }
 
-    // Problema: Precisa criar classe para cada combinação
-    public class EspressoComLeite : Espresso
+    public class Cappuccino : IBeverage
     {
-        public override decimal GetCost()
-        {
-            return base.GetCost() + 0.50m;
-        }
-
-        public override string GetDescription()
-        {
-            return base.GetDescription() + " com Leite";
-        }
+        public decimal GetCost() => 4.50m;
+        public string GetDescription() => "Cappuccino";
     }
 
-    public class EspressoComLeiteEChocolate : Espresso
+    public class Tea : IBeverage
     {
-        public override decimal GetCost()
-        {
-            return base.GetCost() + 0.50m + 0.70m;
-        }
-
-        public override string GetDescription()
-        {
-            return base.GetDescription() + " com Leite e Chocolate";
-        }
+        public decimal GetCost() => 3.00m;
+        public string GetDescription() => "Chá";
     }
 
-    public class EspressoComChocolate : Espresso
+    // ============================
+    // 3) DECORATOR BASE
+    // ============================
+    public abstract class BeverageDecorator : IBeverage
     {
-        public override decimal GetCost()
+        protected readonly IBeverage _beverage;
+
+        protected BeverageDecorator(IBeverage beverage)
         {
-            return base.GetCost() + 0.70m;
+            _beverage = beverage;
         }
 
-        public override string GetDescription()
-        {
-            return base.GetDescription() + " com Chocolate";
-        }
+        public virtual decimal GetCost() => _beverage.GetCost();
+        public virtual string GetDescription() => _beverage.GetDescription();
     }
 
-    public class EspressoComChantilly : Espresso
+    // ============================
+    // 4) CONCRETE DECORATORS (Complementos)
+    // ============================
+    public class Milk : BeverageDecorator
     {
-        public override decimal GetCost()
-        {
-            return base.GetCost() + 1.00m;
-        }
-
-        public override string GetDescription()
-        {
-            return base.GetDescription() + " com Chantilly";
-        }
+        public Milk(IBeverage beverage) : base(beverage) { }
+        public override decimal GetCost() => base.GetCost() + 0.50m;
+        public override string GetDescription() => base.GetDescription() + " com Leite";
     }
 
-    public class EspressoComLeiteEChantilly : Espresso
+    public class Chocolate : BeverageDecorator
     {
-        public override decimal GetCost()
-        {
-            return base.GetCost() + 0.50m + 1.00m;
-        }
-
-        public override string GetDescription()
-        {
-            return base.GetDescription() + " com Leite e Chantilly";
-        }
+        public Chocolate(IBeverage beverage) : base(beverage) { }
+        public override decimal GetCost() => base.GetCost() + 0.70m;
+        public override string GetDescription() => base.GetDescription() + " com Chocolate";
     }
 
-    // E ainda faltariam MUITAS outras combinações:
-    // - Espresso com Leite, Chocolate e Chantilly
-    // - Espresso com Leite, Chocolate, Chantilly e Caramelo
-    // - Cappuccino com Leite
-    // - Cappuccino com Chocolate
-    // - Cappuccino com Leite e Chocolate
-    // ... e assim por diante!
-
-    // Explosão combinatória: 
-    // 3 bebidas base × 2^4 combinações de complementos = 48 classes!
-
-    public class CappuccinoComChocolate : Cappuccino
+    public class WhippedCream : BeverageDecorator
     {
-        public override decimal GetCost()
-        {
-            return base.GetCost() + 0.70m;
-        }
-
-        public override string GetDescription()
-        {
-            return base.GetDescription() + " com Chocolate";
-        }
+        public WhippedCream(IBeverage beverage) : base(beverage) { }
+        public override decimal GetCost() => base.GetCost() + 1.00m;
+        public override string GetDescription() => base.GetDescription() + " com Chantilly";
     }
 
-    // Alternativa problemática: Flags booleanas
-    public class BebidaComFlags
+    public class Caramel : BeverageDecorator
     {
-        private string _baseBeverage;
-        private decimal _basePrice;
-        
-        public bool ComLeite { get; set; }
-        public bool ComChocolate { get; set; }
-        public bool ComChantilly { get; set; }
-        public bool ComCaramelo { get; set; }
-
-        public BebidaComFlags(string baseBeverage, decimal basePrice)
-        {
-            _baseBeverage = baseBeverage;
-            _basePrice = basePrice;
-        }
-
-        // Problema: Método gigante com condicionais
-        public decimal GetCost()
-        {
-            decimal cost = _basePrice;
-
-            if (ComLeite) cost += 0.50m;
-            if (ComChocolate) cost += 0.70m;
-            if (ComChantilly) cost += 1.00m;
-            if (ComCaramelo) cost += 0.80m;
-
-            return cost;
-        }
-
-        public string GetDescription()
-        {
-            string desc = _baseBeverage;
-
-            if (ComLeite) desc += " com Leite";
-            if (ComChocolate) desc += " com Chocolate";
-            if (ComChantilly) desc += " com Chantilly";
-            if (ComCaramelo) desc += " com Caramelo";
-
-            return desc;
-        }
-
-        // Problema: Adicionar novo complemento = modificar esta classe
-        // Viola Open/Closed Principle
+        public Caramel(IBeverage beverage) : base(beverage) { }
+        public override decimal GetCost() => base.GetCost() + 0.80m;
+        public override string GetDescription() => base.GetDescription() + " com Caramelo";
     }
 
+    // ============================
+    // 5) DEMO
+    // ============================
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("=== Sistema de Pedidos - Cafeteria ===\n");
+            Console.WriteLine("=== Sistema de Pedidos - Cafeteria (Decorator) ===\n");
 
-            // Abordagem 1: Classes específicas (explosão combinatória)
-            Console.WriteLine("--- Pedidos com classes específicas ---");
-            
-            var cafe1 = new Espresso();
-            Console.WriteLine($"{cafe1.GetDescription()}: R$ {cafe1.GetCost():N2}");
+            // Espresso simples
+            IBeverage order1 = new Espresso();
+            Print(order1);
 
-            var cafe2 = new EspressoComLeite();
-            Console.WriteLine($"{cafe2.GetDescription()}: R$ {cafe2.GetCost():N2}");
+            // Espresso com leite
+            IBeverage order2 = new Milk(new Espresso());
+            Print(order2);
 
-            var cafe3 = new EspressoComLeiteEChocolate();
-            Console.WriteLine($"{cafe3.GetDescription()}: R$ {cafe3.GetCost():N2}");
+            // Espresso com leite e chocolate
+            IBeverage order3 = new Chocolate(new Milk(new Espresso()));
+            Print(order3);
 
-            // E se o cliente quiser Espresso com Leite, Chocolate, Chantilly e Caramelo?
-            // Precisaria criar outra classe!
+            // Cappuccino com leite + chocolate + chantilly
+            IBeverage order4 = new WhippedCream(new Chocolate(new Milk(new Cappuccino())));
+            Print(order4);
 
-            Console.WriteLine("\n--- Pedidos com flags booleanas ---");
+            // Espresso com tudo (Leite + Chocolate + Chantilly + Caramelo)
+            IBeverage order5 = new Caramel(new WhippedCream(new Chocolate(new Milk(new Espresso()))));
+            Print(order5);
 
-            var cafe4 = new BebidaComFlags("Cappuccino", 4.50m);
-            cafe4.ComLeite = true;
-            cafe4.ComChocolate = true;
-            cafe4.ComChantilly = true;
-            Console.WriteLine($"{cafe4.GetDescription()}: R$ {cafe4.GetCost():N2}");
+            Console.WriteLine("\n✅ Sem explosão combinatória, complementos adicionados em runtime.");
+            Console.ReadLine();
+        }
 
-            // Problema: Cliente pode esquecer de setar flags
-            var cafe5 = new BebidaComFlags("Espresso", 3.50m);
-            // Esqueci de configurar os complementos
-            Console.WriteLine($"{cafe5.GetDescription()}: R$ {cafe5.GetCost():N2}");
-
-            Console.WriteLine("\n=== PROBLEMAS ===");
-            Console.WriteLine("Abordagem 1 (Classes específicas):");
-            Console.WriteLine("✗ Explosão combinatória: N bebidas × 2^M complementos classes");
-            Console.WriteLine("✗ Código altamente duplicado");
-            Console.WriteLine("✗ Difícil adicionar novos complementos");
-            Console.WriteLine("✗ Impossível adicionar complementos dinamicamente");
-            Console.WriteLine();
-            Console.WriteLine("Abordagem 2 (Flags booleanas):");
-            Console.WriteLine("✗ Viola Open/Closed Principle");
-            Console.WriteLine("✗ Classe cresce a cada novo complemento");
-            Console.WriteLine("✗ Não é extensível sem modificação");
-            Console.WriteLine("✗ Difícil adicionar comportamento aos complementos");
-
-            // Perguntas para reflexão:
-            // - Como adicionar comportamento a um objeto dinamicamente?
-            // - Como combinar múltiplos comportamentos sem criar classes para cada combinação?
-            // - Como manter a interface compatível ao adicionar funcionalidades?
-            // - Como permitir que complementos sejam adicionados em tempo de execução?
+        static void Print(IBeverage beverage)
+        {
+            Console.WriteLine($"{beverage.GetDescription()}: R$ {beverage.GetCost():N2}");
         }
     }
 }
